@@ -1,34 +1,23 @@
 # Arduino makefile
 #
+# Modified by Daniele Sdei <danielesdei@gmail.com> to
+# work on linux command line and sort out dependencies.
+#
 # This makefile allows you to build sketches from the command line
 # without the Arduino environment (or Java).
 #
-# The Arduino environment does preliminary processing on a sketch before
-# compiling it.  If you're using this makefile instead, you'll need to do
-# a few things differently:
 #
-#   - Give your program's file a .cpp extension (e.g. foo.cpp).
+# Detailed instructions for using the makefile:
 #
-#   - Put this line at top of your code: #include <WProgram.h>
-#
-#   - Write prototypes for all your functions (or define them before you
-#     call them).  A prototype declares the types of parameters a
-#     function will take and what type of value it will return.  This
-#     means that you can have a call to a function before the definition
-#     of the function.  A function prototype looks like the first line of
-#     the function, with a semi-colon at the end.  For example:
-#     int digitalRead(int pin);
-#
-# Instructions for using the makefile:
-#
-#  1. Copy this file into the folder with your sketch.
+#  1. Copy this file into the folder with your sketch. There should be a
+#     file with the same name as the folder and with the extension .pde
+#     (e.g. foo.pde in the foo/ folder).
 #
 #  2. Below, modify the line containing "TARGET" to refer to the name of
 #     of your program's file without an extension (e.g. TARGET = foo).
 #
 #  3. Modify the line containg "ARDUINO" to point the directory that
-#     contains the Arduino core (for normal Arduino installations, this
-#     is the hardware/cores/arduino sub-directory).
+#     contains the Arduino core.
 #
 #  4. Modify the line containing "PORT" to refer to the filename
 #     representing the USB or serial connection to your Arduino board
@@ -42,32 +31,44 @@
 #
 #  7. Type "make upload", reset your Arduino board, and press enter  to
 #     upload your program to the Arduino board.
-#
-# $Id: Makefile,v 1.7 2007/04/13 05:28:23 eighthave Exp $
 
-PORT = /dev/tty.usbserial-*
+PORT = /dev/ttyUSB0
 TARGET := $(shell pwd | sed 's|.*/\(.*\)|\1|')
-ARDUINO = /Applications/arduino
-ARDUINO_SRC = $(ARDUINO)/hardware/cores/arduino
-ARDUINO_LIB_SRC = $(ARDUINO)/hardware/libraries
-INCLUDE = -I$(ARDUINO_SRC) -I$(ARDUINO)/hardware/tools/avr/avr/include \
+ARDUINO = /usr/share/arduino
+ARDUINO_SRC = $(ARDUINO)/hardware/arduino/cores/arduino
+ARDUINO_LIB_SRC = $(ARDUINO)/libraries
+AVR_TOOLS_PATH = /usr/bin
+AVRDUDE_PATH = /usr/bin
+INCLUDE = -I$(ARDUINO_SRC) \
 	-I$(ARDUINO_LIB_SRC)/EEPROM \
 	-I$(ARDUINO_LIB_SRC)/Firmata \
+	-I$(ARDUINO_LIB_SRC)/LiquidCrystal \
+	-I$(ARDUINO_LIB_SRC)/Matrix \
 	-I$(ARDUINO_LIB_SRC)/Servo \
+	-I$(ARDUINO_LIB_SRC)/SoftwareSerial \
+	-I$(ARDUINO_LIB_SRC)/Sprite \
+	-I$(ARDUINO_LIB_SRC)/Stepper \
 	-I$(ARDUINO_LIB_SRC)
 SRC = $(wildcard $(ARDUINO_SRC)/*.c)
 CXXSRC = applet/$(TARGET).cpp $(ARDUINO_SRC)/HardwareSerial.cpp \
 	$(ARDUINO_LIB_SRC)/EEPROM/EEPROM.cpp \
 	$(ARDUINO_LIB_SRC)/Firmata/Firmata.cpp \
+	$(ARDUINO_LIB_SRC)/LiquidCrystal/LiquidCrystal.cpp \
+	$(ARDUINO_LIB_SRC)/Matrix/Matrix.cpp \
 	$(ARDUINO_LIB_SRC)/Servo/Servo.cpp \
-	$(ARDUINO_SRC)/WMath.cpp
+	$(ARDUINO_LIB_SRC)/SoftwareSerial/SoftwareSerial.cpp \
+	$(ARDUINO_LIB_SRC)/Sprite/Sprite.cpp \
+	$(ARDUINO_LIB_SRC)/Stepper/Stepper.cpp \
+	$(ARDUINO_SRC)/Print.cpp \
+	$(ARDUINO_SRC)/Tone.cpp \
+	$(ARDUINO_SRC)/WMath.cpp \
+	$(ARDUINO_SRC)/WString.cpp
 HEADERS = $(wildcard $(ARDUINO_SRC)/*.h) $(wildcard $(ARDUINO_LIB_SRC)/*/*.h)
 
-MCU = atmega168
-#MCU = atmega8
+MCU = atmega328p
 F_CPU = 16000000
 FORMAT = ihex
-UPLOAD_RATE = 19200
+UPLOAD_RATE = 57600
 
 # Name of this Makefile (used for "make depend").
 MAKEFILE = Makefile
@@ -80,8 +81,8 @@ DEBUG = stabs
 OPT = s
 
 # Place -D or -U options here
-CDEFS = -DF_CPU=$(F_CPU)
-CXXDEFS = -DF_CPU=$(F_CPU)
+CDEFS = -ffunction-sections -fdata-sections -DF_CPU=$(F_CPU)
+CXXDEFS = -ffunction-sections -fdata-sections -DF_CPU=$(F_CPU)
 
 # Compiler flag to set the C Standard level.
 # c89   - "ANSI" C
@@ -95,26 +96,26 @@ CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 #CEXTRA = -Wa,-adhlns=$(<:.c=.lst)
 
 CFLAGS = $(CDEBUG) $(CDEFS) $(INCLUDE) -O$(OPT) $(CWARN) $(CSTANDARD) $(CEXTRA)
-CXXFLAGS = $(CDEFS) $(INCLUDE) -O$(OPT)
+CXXFLAGS = $(CXXDEFS) $(INCLUDE) -O$(OPT)
 #ASFLAGS = -Wa,-adhlns=$(<:.S=.lst),-gstabs 
 LDFLAGS = 
 
 
 # Programming support using avrdude. Settings and variables.
-AVRDUDE_PROGRAMMER = stk500
+AVRDUDE_PROGRAMMER = stk500v1
 AVRDUDE_PORT = $(PORT)
 AVRDUDE_WRITE_FLASH = -U flash:w:applet/$(TARGET).hex
-AVRDUDE_FLAGS = -F -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) \
-  -b $(UPLOAD_RATE) -q -V
+AVRDUDE_FLAGS = -F -C /etc/avrdude.conf -p $(MCU) -P $(AVRDUDE_PORT) \
+  -c $(AVRDUDE_PROGRAMMER) -b $(UPLOAD_RATE)
 
 # Program settings
-CC = avr-gcc
-CXX = avr-g++
-OBJCOPY = avr-objcopy
-OBJDUMP = avr-objdump
-SIZE = avr-size
-NM = avr-nm
-AVRDUDE = avrdude
+CC = $(AVR_TOOLS_PATH)/avr-gcc 
+CXX = $(AVR_TOOLS_PATH)/avr-g++
+OBJCOPY = $(AVR_TOOLS_PATH)/avr-objcopy
+OBJDUMP = $(AVR_TOOLS_PATH)/avr-objdump
+SIZE = $(AVR_TOOLS_PATH)/avr-size
+NM = $(AVR_TOOLS_PATH)/avr-nm
+AVRDUDE = $(AVRDUDE_PATH)/avrdude
 REMOVE = rm -f
 MV = mv -f
 
@@ -199,14 +200,14 @@ applet/$(TARGET).cpp: $(TARGET).pde
 	test -d applet || mkdir applet
 	echo '#include "WProgram.h"' > applet/$(TARGET).cpp
 	echo '#include "avr/interrupt.h"' >> applet/$(TARGET).cpp
-	sed -n 's|^\(void .*)\).*|\1;|p' $(TARGET).pde | grep -v 'setup()' | \
-		grep -v 'loop()' >> applet/$(TARGET).cpp
+#	sed -n 's|^\(void .*)\).*|\1;|p' $(TARGET).pde | grep -v 'setup()' | \
+#		grep -v 'loop()' >> applet/$(TARGET).cpp
 	cat $(TARGET).pde >> applet/$(TARGET).cpp
-	cat $(ARDUINO_SRC)/main.cxx >> applet/$(TARGET).cpp
+	cat $(ARDUINO_SRC)/main.cpp >> applet/$(TARGET).cpp
 
 # Link: create ELF output file from object files.
 applet/$(TARGET).elf: applet/$(TARGET).cpp $(OBJ)
-	$(CC) $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
+	$(CC) -Wl,--gc-sections $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
 
 pd_close_serial:
 	echo 'close;' | /Applications/Pd-extended.app/Contents/Resources/bin/pdsend 34567 || true
@@ -238,26 +239,3 @@ depend:
 	$(CC) -M -mmcu=$(MCU) $(CDEFS) $(INCLUDE) $(SRC) $(ASRC) >> $(MAKEFILE)
 
 .PHONY:	all build eep lss sym coff extcoff clean depend pd_close_serial pd_test
-
-# for emacs
-etags:
-	make etags_`uname -s`
-	etags *.pde \
-		$(ARDUINO_SRC)/*.[ch] \
-		$(ARDUINO_SRC)/*.cpp \
-		$(ARDUINO_LIB_SRC)/*/*.[ch] \
-		$(ARDUINO_LIB_SRC)/*/*.cpp \
-		$(ARDUINO)/hardware/tools/avr/avr/include/avr/*.[ch] \
-		$(ARDUINO)/hardware/tools/avr/avr/include/*.[ch]
-
-etags_Darwin:
-#	etags -a 
-
-etags_Linux:
-#	etags -a /usr/include/*.h linux/input.h /usr/include/sys/*.h
-
-etags_MINGW:
-#	etags -a /usr/include/*.h /usr/include/sys/*.h 
-
-
-
