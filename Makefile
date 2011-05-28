@@ -1,7 +1,8 @@
 # Arduino makefile
 #
 # Modified by Daniele Sdei <danielesdei@gmail.com> to
-# work on linux command line and sort out dependencies.
+# work on linux command line and sort out dependencies,
+# for more information visit http://wiki.madefree.eu
 #
 # This makefile allows you to build sketches from the command line
 # without the Arduino environment (or Java).
