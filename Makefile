@@ -47,10 +47,14 @@ INCLUDE = -I$(ARDUINO_SRC) \
 	-I$(ARDUINO_LIB_SRC)/Matrix \
 	-I$(ARDUINO_LIB_SRC)/Servo \
 	-I$(ARDUINO_LIB_SRC)/SoftwareSerial \
+	-I$(ARDUINO_LIB_SRC)/SPI \
 	-I$(ARDUINO_LIB_SRC)/Sprite \
 	-I$(ARDUINO_LIB_SRC)/Stepper \
+	-I$(ARDUINO_LIB_SRC)/Wire \
+	-I$(ARDUINO_LIB_SRC)/Wire/utility \
 	-I$(ARDUINO_LIB_SRC)
-SRC = $(wildcard $(ARDUINO_SRC)/*.c)
+SRC = $(wildcard $(ARDUINO_SRC)/*.c) \
+      $(wildcard $(ARDUINO_LIB_SRC)/Wire/utility/twi.c)
 CXXSRC = applet/$(TARGET).cpp $(ARDUINO_SRC)/HardwareSerial.cpp \
 	$(ARDUINO_LIB_SRC)/EEPROM/EEPROM.cpp \
 	$(ARDUINO_LIB_SRC)/Firmata/Firmata.cpp \
@@ -58,13 +62,17 @@ CXXSRC = applet/$(TARGET).cpp $(ARDUINO_SRC)/HardwareSerial.cpp \
 	$(ARDUINO_LIB_SRC)/Matrix/Matrix.cpp \
 	$(ARDUINO_LIB_SRC)/Servo/Servo.cpp \
 	$(ARDUINO_LIB_SRC)/SoftwareSerial/SoftwareSerial.cpp \
+	$(ARDUINO_LIB_SRC)/SPI/SPI.cpp \
 	$(ARDUINO_LIB_SRC)/Sprite/Sprite.cpp \
 	$(ARDUINO_LIB_SRC)/Stepper/Stepper.cpp \
+	$(ARDUINO_LIB_SRC)/Wire/Wire.cpp \
 	$(ARDUINO_SRC)/Print.cpp \
 	$(ARDUINO_SRC)/Tone.cpp \
 	$(ARDUINO_SRC)/WMath.cpp \
 	$(ARDUINO_SRC)/WString.cpp
-HEADERS = $(wildcard $(ARDUINO_SRC)/*.h) $(wildcard $(ARDUINO_LIB_SRC)/*/*.h)
+HEADERS = $(wildcard $(ARDUINO_SRC)/*.h) \
+	  $(wildcard $(ARDUINO_LIB_SRC)/*/*.h) \
+	  $(wildcard $(ARDUINO_LIB_SRC)/Wire/utility/twi.h)
 
 MCU = atmega328p
 F_CPU = 16000000
